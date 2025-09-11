@@ -2,49 +2,11 @@ import { Editor, Extension, Storage } from "@tiptap/core";
 import { EditorState, Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, EditorView } from "@tiptap/pm/view";
 import { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { PageInfo, PaginationPlusOptions, PaginationPlusStorageOptions, VDivInfo } from "./types";
 
 let debugCounter = 0
 const MIN_H_GUARD = 4
 
-export interface PaginationPlusOptions {
-  pageHeight: number;
-  pageGap: number;
-  pageBreakBackground: string;
-  pageHeaderHeight: number;
-  pageFooterHeight: number;
-  pageGapBorderSize: number;
-  footerRight: string;
-  footerLeft: string;
-  headerRight: string;
-  headerLeft: string;
-  marginTop: number;
-  marginBottom: number;
-  marginLeft: number;
-  marginRight: number;
-  contentMarginTop: number;
-  contentMarginBottom: number;
-}
-
-type PageInfo = {
-  index: number;
-  mt: number;
-  // children index start
-  cis: number;
-  // children index end
-  cie: number;
-};
-
-type VDivInfo = {
-  type: number; // 0 = PAGEBREAK, 1 = FIGURE
-  dir: number; // -1 = before, 1 = after
-  height: number;
-  lastBottom: number;
-};
-
-interface PaginationPlusStorageOptions {
-  ignoreObserver: boolean
-  vdivs: Map<string, VDivInfo>
-}
 
 
 declare module '@tiptap/core' {  
@@ -53,10 +15,12 @@ declare module '@tiptap/core' {
   }
 }
 
-type DecoSets = {
+
+export type DecoSets = {
   vdivs: DecorationSet; // 
   pageCount: DecorationSet; // es: pageCount
 };
+
 
 function mergeSets(
   doc: ProseMirrorNode,
@@ -123,6 +87,7 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, Paginati
       marginRight: 50,
       contentMarginTop: 10,
       contentMarginBottom: 10,
+      showDividerDebug: false
     };
   },
   addStorage() {
@@ -339,7 +304,8 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, Paginati
             );
             const widgeDivsList = createDividerDecoration(
                 editor,
-                state
+                state,
+                pageOptions.showDividerDebug
               );
             return {
               vdivs: DecorationSet.create(state.doc, [...widgeDivsList]),
@@ -356,7 +322,8 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, Paginati
             if (tr.getMeta(vdivs_meta_key)) {
               const widgetList = createDividerDecoration(
                 editor,
-                newState
+                newState,
+                pageOptions.showDividerDebug
               );
               vdivs = DecorationSet.create(newState.doc, [...widgetList]);
             }
@@ -894,7 +861,8 @@ function createDecoration(
 
 function createDividerDecoration(
   editor: Editor,
-  state: EditorState
+  state: EditorState,
+  showDividerDebug: boolean
 ): Decoration[] {
   const breaksDeco: Decoration[] = [];
 
@@ -907,8 +875,9 @@ function createDividerDecoration(
         if (!curDiv) return true;
         const pageVDiv = document.createElement("div");
         pageVDiv.classList.add("vdiv-spacer");
-        pageVDiv.style.width = "100%";
-        pageVDiv.style.backgroundColor = node.attrs.type && node.attrs.type === "after" ? "blue" : "green";
+        pageVDiv.style.width = "100%";        
+        if (showDividerDebug)
+          pageVDiv.style.backgroundColor = node.attrs.type && node.attrs.type === "after" ? "blue" : "green";
         // pageVDiv.style.marginTop = (curBreak.height || 0) + "px";
         // pageVDiv.style.height = "1px";
         pageVDiv.style.height = (curDiv.height || 0) + "px";

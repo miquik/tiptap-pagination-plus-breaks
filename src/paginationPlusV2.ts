@@ -2,49 +2,10 @@ import { Editor, Extension } from "@tiptap/core";
 import { EditorState, Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, EditorView } from "@tiptap/pm/view";
 import { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { PageInfo, PaginationPlusOptions, PaginationPlusStorageOptions, VDivInfo } from "./types";
 
 let debugCounter = 0
 const MIN_H_GUARD = 4
-
-export interface PaginationPlusOptions {
-  pageHeight: number;
-  pageGap: number;
-  pageBreakBackground: string;
-  pageHeaderHeight: number;
-  pageFooterHeight: number;
-  pageGapBorderSize: number;
-  footerRight: string;
-  footerLeft: string;
-  headerRight: string;
-  headerLeft: string;
-  marginTop: number;
-  marginBottom: number;
-  marginLeft: number;
-  marginRight: number;
-  contentMarginTop: number;
-  contentMarginBottom: number;
-}
-
-type PageInfo = {
-  index: number;
-  mt: number;
-  // children index start
-  cis: number;
-  // children index end
-  cie: number;
-};
-
-type VDivInfo = {
-  type: number; // 0 = PAGEBREAK, 1 = FIGURE
-  dir: number; // -1 = before, 1 = after
-  height: number;
-  lastBottom: number;
-};
-
-interface PaginationPlusStorageOptions {
-  ignoreObserver: boolean
-  vdivs: Map<string, VDivInfo>
-}
 
 
 declare module '@tiptap/core' {  
@@ -53,11 +14,14 @@ declare module '@tiptap/core' {
   }
 }
 
-type DecoSets = {
+
+export type DecoSets = {
   vdivs: DecorationSet; // 
   pageCount: DecorationSet; // es: pageCount
-  decoVersion: number;
+  decoVersion: number
 };
+
+
 type MetaPayload = { decoToUpdate: 0 };
 
 const PaginationPluginKey = new PluginKey<DecoSets>("pagination")
@@ -143,6 +107,7 @@ export const PaginationPlusV2 = Extension.create<PaginationPlusOptions, Paginati
       marginRight: 50,
       contentMarginTop: 10,
       contentMarginBottom: 10,
+      showDividerDebug: false
     };
   },
   addStorage() {
@@ -271,7 +236,8 @@ export const PaginationPlusV2 = Extension.create<PaginationPlusOptions, Paginati
             );
             const widgeDivsList = createDividerDecoration(
                 editor,
-                state
+                state,
+                pageOptions.showDividerDebug
               );
             return {
               vdivs: DecorationSet.create(state.doc, [...widgeDivsList]),
@@ -292,7 +258,8 @@ export const PaginationPlusV2 = Extension.create<PaginationPlusOptions, Paginati
             if (meta && (meta.decoToUpdate & 1) !== 0) {
               const widgetList = createDividerDecoration(
                 editor,
-                newState
+                newState,
+                pageOptions.showDividerDebug
               );
               vdivs = DecorationSet.create(newState.doc, [...widgetList]);
               decoVersion = decoVersion + 1
@@ -894,7 +861,8 @@ function createDecoration(
 
 function createDividerDecoration(
   editor: Editor,
-  state: EditorState
+  state: EditorState,
+  showDividerDebug: boolean
 ): Decoration[] {
   const breaksDeco: Decoration[] = [];
 
@@ -908,9 +876,8 @@ function createDividerDecoration(
         const pageVDiv = document.createElement("div");
         pageVDiv.classList.add("vdiv-spacer");
         pageVDiv.style.width = "100%";
-        pageVDiv.style.backgroundColor = node.attrs.type && node.attrs.type === "after" ? "blue" : "green";
-        // pageVDiv.style.marginTop = (curBreak.height || 0) + "px";
-        // pageVDiv.style.height = "1px";
+        if (showDividerDebug)
+          pageVDiv.style.backgroundColor = node.attrs.type && node.attrs.type === "after" ? "blue" : "green";
         pageVDiv.style.height = (curDiv.height || 0) + "px";
         pageVDiv.dataset["bid"] = node.attrs.bid;
         // Insert a decoration immediately after this node
@@ -928,125 +895,3 @@ function createDividerDecoration(
 
   return breaksDeco;
 }
-
-
-/*
-import { Plugin, PluginKey } from "prosemirror-state";
-import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
-import { EditorState } from "prosemirror-state";
-import { Node as PMNode } from "prosemirror-model";
-
-export const RecalcDecorationsKey = new PluginKey<{
-  deco: DecorationSet;
-  decoVersion: number;
-}>("recalc-decorations-plugin");
-
-type MetaPayload = { recalc: true };
-
-function computeDecorations(doc: PMNode): DecorationSet {
-  const decorations: Decoration[] = [];
-
-  // Esempio: evidenzia ultimo paragrafo
-  let lastPos: number | null = null;
-  doc.descendants((node, pos) => {
-    if (node.type.name === "paragraph") lastPos = pos;
-  });
-  if (lastPos != null) {
-    const node = doc.nodeAt(lastPos);
-    if (node) {
-      decorations.push(
-        Decoration.node(lastPos, lastPos + node.nodeSize, { class: "pm-last-paragraph" })
-      );
-    }
-  }
-  return DecorationSet.create(doc, decorations);
-}
-
-function domWorkBeforeDecorations(view: EditorView): boolean {
-  // Operazioni sul DOM già aggiornato al nuovo doc ma prima delle nuove decorazioni
-  // → misurazioni, query, calcoli…
-  const ok = !!view.dom.querySelector("p");
-  return ok;
-}
-
-function domWorkAfterDecorations(view: EditorView): void {
-  // Operazioni che dipendono da DECORAZIONI applicate al DOM
-  // Esempio: misurazioni di elementi con classi/widget decoration
-  const last = view.dom.querySelector(".pm-last-paragraph");
-  if (last instanceof HTMLElement) {
-    // esempio banale: leggi bounding box o aggiungi overlay esterno
-    const rect = last.getBoundingClientRect();
-    // …usa rect per logica tua (overlay assoluto, ecc.)
-    // NB: evita di mutare nodi gestiti da PM; usa contenitori esterni/overlay
-    // oppure classList su wrapper esterni tuoi
-  }
-}
-
-export const RecalcDecorationsPlugin = new Plugin({
-  key: RecalcDecorationsKey,
-
-  state: {
-    init(_config, state) {
-      return {
-        deco: computeDecorations(state.doc),
-        decoVersion: 0,
-      };
-    },
-    apply(tr, pluginState, _oldState, newState) {
-      const meta = tr.getMeta(RecalcDecorationsKey) as MetaPayload | undefined;
-
-      if (tr.docChanged || meta?.recalc) {
-        // Ricalcolo decorazioni e incremento versione
-        return {
-          deco: computeDecorations(newState.doc),
-          decoVersion: pluginState.decoVersion + 1,
-        };
-      }
-      return pluginState;
-    },
-  },
-
-  props: {
-    decorations(state: EditorState) {
-      const ps = RecalcDecorationsKey.getState(state);
-      return ps?.deco ?? null;
-    },
-  },
-
-  view(editorView: EditorView) {
-    // Manteniamo l’ultima versione vista per capire quando le deco sono state applicate
-    let seenDecoVersion = RecalcDecorationsKey.getState(editorView.state)?.decoVersion ?? 0;
-
-    return {
-      update(view, prevState) {
-        const prevPS = RecalcDecorationsKey.getState(prevState);
-        const curPS  = RecalcDecorationsKey.getState(view.state);
-
-        // 1) STEP PRE-DECORAZIONI: quando cambia il DOC (esclude cambi selezione)
-        if (!prevState.doc.eq(view.state.doc)) {
-          const ok = domWorkBeforeDecorations(view);
-          if (ok) {
-            // Chiedi ricalcolo decorazioni (non cambia doc → niente loop)
-            view.dispatch(view.state.tr.setMeta(RecalcDecorationsKey, { recalc: true } as MetaPayload));
-          }
-        }
-
-        // 2) STEP POST-DECORAZIONI: quando aumenta decoVersion
-        const prevVersion = prevPS?.decoVersion ?? seenDecoVersion;
-        const curVersion  = curPS?.decoVersion ?? prevVersion;
-
-        if (curVersion > prevVersion) {
-          seenDecoVersion = curVersion;
-
-          // Assicurati che il layout sia stabile prima di misurare
-          // (spesso non serve, ma con overlay/immagini è più robusto)
-          requestAnimationFrame(() => {
-            domWorkAfterDecorations(view);
-          });
-        }
-      },
-      destroy() {},
-    };
-  },
-});
-*/
