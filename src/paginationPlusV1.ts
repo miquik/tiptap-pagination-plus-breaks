@@ -478,6 +478,11 @@ const calculateVDivsHeight = (
 
     const pbs = editorDom.querySelectorAll("[data-break]");
     if (pbs && pbs.length > 0) {
+      if (pbs.length !== storage.vdivs.size) {
+        // resettiamo le vdivs
+        storage.vdivs.clear()
+      }
+
       // 1. Stimiamo una quantità di pagine che potrebbero risultare dopo l'algoritmo
       let pageCount = calculatePageCount(view, pageOptions);
       pageCount += pbs.length + 2;

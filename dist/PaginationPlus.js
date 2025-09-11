@@ -340,3 +340,4 @@ function createDecoration(state, pageOptions, isInitial = false) {
     }, { side: -1 });
     return !isInitial ? [pageWidget, firstHeaderWidget] : [pageWidget];
 }
+//# sourceMappingURL=PaginationPlus.js.map
