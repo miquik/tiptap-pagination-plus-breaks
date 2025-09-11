@@ -1,4 +1,4 @@
-import { Editor, Extension } from "@tiptap/core";
+import { Editor, Extension, Storage } from "@tiptap/core";
 import { EditorState, Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, EditorView } from "@tiptap/pm/view";
 import { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -46,6 +46,12 @@ interface PaginationPlusStorageOptions {
   vdivs: Map<string, VDivInfo>
 }
 
+
+declare module '@tiptap/core' {  
+  interface Storage {
+    pplusb: PaginationPlusStorageOptions
+  }
+}
 
 type DecoSets = {
   vdivs: DecorationSet; // 
@@ -97,8 +103,8 @@ let pauseObserver = false;
 const page_count_meta_key = "PAGE_COUNT_META_KEY";
 const vdivs_meta_key = "VDIVS_META_KEY";
 
-export const PaginationPlusV1 = Extension.create<PaginationPlusOptions>({
-  name: "PaginationPlus",
+export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, PaginationPlusStorageOptions>({
+  name: "pplusb",
   addOptions() {
     return {
       pageHeight: 800,
@@ -253,7 +259,7 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions>({
           if (
             vdivsMustBeRecalculated(
               pbs,
-              this.editor.storage.PaginationPlus.vdivs
+              this.editor.storage.pplusb.vdivs
             )
           ) {
             // ricalcoliamo le altezze dei PBS
@@ -482,11 +488,11 @@ function getPagesInfo(
 
 const calculateVDivsHeight = (
   view: EditorView,
-  store: Record<string, unknown>,
+  store: Storage,
   pageOptions: PaginationPlusOptions
 ) => {
   // L'idea è quella di modificare le altezze dei vdiv-spacer esistenti
-  const storage = store.PaginationPlus as PaginationPlusStorageOptions
+  const storage = store.pplusb as PaginationPlusStorageOptions
   const editorDom = view.dom;
 
   const _pageGap = pageOptions.pageGap;
@@ -892,10 +898,10 @@ function createDividerDecoration(
 ): Decoration[] {
   const breaksDeco: Decoration[] = [];
 
-  if (editor.storage.PaginationPlus.vdivs.size > 0) {
+  if (editor.storage.pplusb.vdivs.size > 0) {
     state.doc.forEach((node, offset) => {
       if (node.type.name === "pb") {
-        const curDiv = editor.storage.PaginationPlus.vdivs.get(
+        const curDiv = editor.storage.pplusb.vdivs.get(
           node.attrs.bid
         );
         if (!curDiv) return true;

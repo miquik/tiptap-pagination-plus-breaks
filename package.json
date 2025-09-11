@@ -29,11 +29,11 @@
   "author": "Romik Makavana",
   "license": "MIT",
   "devDependencies": {
-    "@tiptap/core": "^2.26.1",
-    "@tiptap/pm": "^2.26.1",
-    "@types/node": "^22.15.2",
-    "tsc-watch": "^6.0.4",
-    "typescript": "^5.8.3"
+    "@tiptap/core": "^3.4.2",
+    "@tiptap/pm": "^3.4.2",
+    "@types/node": "^24.3.1",
+    "tsc-watch": "^7.1.1",
+    "typescript": "^5.9.2"
   },
   "bugs": {
     "url": "https://github.com/RomikMakavana/tiptap-pagination-plus/issues"
@@ -46,5 +46,6 @@
   "peerDependencies": {
     "@tiptap/core": "^2.0.0",
     "@tiptap/pm": "^2.0.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
