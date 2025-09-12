@@ -218,6 +218,17 @@ export const PaginationPlusV2 = Extension.create<PaginationPlusOptions, Paginati
       }
     `;
     document.head.appendChild(style);
+    
+    // 
+    this.editor.storage.pplusb.pageContentHeight = _pageContentHeight
+    this.editor.storage.pplusb.pageContentWidth = targetNode.clientWidth
+  },
+  onUpdate() {
+    const targetNode = this.editor.view.dom;
+    const headerFooterHeight = this.options.pageHeaderHeight + this.options.pageFooterHeight;
+    const _pageContentHeight = this.options.pageHeight - headerFooterHeight - this.options.contentMarginTop - this.options.contentMarginBottom - this.options.marginTop - this.options.marginBottom;
+    this.editor.storage.pplusb.pageContentHeight = _pageContentHeight
+    this.editor.storage.pplusb.pageContentWidth = targetNode.clientWidth
   },
   addProseMirrorPlugins() {
     const pageOptions = this.options;
