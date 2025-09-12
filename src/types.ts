@@ -24,6 +24,8 @@ export interface PaginationPlusOptions {
 export interface PaginationPlusStorageOptions {
   ignoreObserver: boolean
   vdivs: Map<string, VDivInfo>
+  pageContentWidth: number
+  pageContentHeight: number
 }
 
 

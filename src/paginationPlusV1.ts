@@ -94,6 +94,8 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, Paginati
     return {
       ignoreObserver: false,
       vdivs: new Map<string, VDivInfo>(),
+      pageContentWidth: 500,
+      pageContentHeight: 800
     } as PaginationPlusStorageOptions;
   },
   onCreate() {
@@ -286,6 +288,17 @@ export const PaginationPlusV1 = Extension.create<PaginationPlusOptions, Paginati
     const observer = new MutationObserver(callback);
     observer.observe(targetNode, config);
     refreshPage(targetNode);
+
+    // 
+    this.editor.storage.pplusb.pageContentHeight = _pageContentHeight
+    this.editor.storage.pplusb.pageContentWidth = targetNode.clientWidth
+  },
+  onUpdate() {
+    const targetNode = this.editor.view.dom;
+    const headerFooterHeight = this.options.pageHeaderHeight + this.options.pageFooterHeight;
+    const _pageContentHeight = this.options.pageHeight - headerFooterHeight - this.options.contentMarginTop - this.options.contentMarginBottom - this.options.marginTop - this.options.marginBottom;
+    this.editor.storage.pplusb.pageContentHeight = _pageContentHeight
+    this.editor.storage.pplusb.pageContentWidth = targetNode.clientWidth
   },
   addProseMirrorPlugins() {
     const pageOptions = this.options;
