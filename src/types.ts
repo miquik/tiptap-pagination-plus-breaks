@@ -2,32 +2,37 @@ import { DecorationSet } from "@tiptap/pm/view";
 
 export interface PaginationPlusOptions {
   pageHeight: number;
+  pageWidth: number;
   pageGap: number;
   pageBreakBackground: string;
   pageHeaderHeight: number;
   pageFooterHeight: number;
   pageGapBorderSize: number;
-  footerRight: string;
-  footerLeft: string;
-  headerRight: string;
-  headerLeft: string;
+  footer?:
+    | ((page: number, numPages: number, dom: HTMLElement|undefined) => HTMLElement)
+    | string;
+  header?:
+    | ((page: number, numPages: number, dom: HTMLElement|undefined) => HTMLElement)
+    | string;
   marginTop: number;
   marginBottom: number;
   marginLeft: number;
   marginRight: number;
   contentMarginTop: number;
   contentMarginBottom: number;
-  showDividerDebug: boolean
+  //
+  showDividerDebug: boolean;
+  initializeOnPaste: boolean;
 }
-
 
 export interface PaginationPlusStorageOptions {
-  ignoreObserver: boolean
-  vdivs: Map<string, VDivInfo>
-  pageContentWidth: number
-  pageContentHeight: number
+  vdivs: VDivInfo[]
+  pageContentWidth: number;
+  pageContentHeight: number;
+  breaksToUpdate: number;
+  existingPageCount: number;
+  pbs: NodeListOf<HTMLElement>; // HTMLElement[]
 }
-
 
 export type PageInfo = {
   index: number;
@@ -39,9 +44,9 @@ export type PageInfo = {
 };
 
 export type VDivInfo = {
-  type: number; // 0 = PAGEBREAK, 1 = FIGURE
   dir: number; // -1 = before, 1 = after
   height: number;
   lastBottom: number;
+  vdivTop?: number;
+  decoPos: number
 };
-
