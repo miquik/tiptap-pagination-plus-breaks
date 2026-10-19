@@ -48,3 +48,46 @@ test('failed images do not block measuring; destroy cancels queued frames', () =
   assert.equal(frames.size,0)
   delete global.requestAnimationFrame; delete global.cancelAnimationFrame
 })
+
+test('new request with the same key replaces the callback waiting for a frame', () => {
+  const frames = new Map(); let id = 0; const calls = []
+  global.requestAnimationFrame = fn => { frames.set(++id, fn); return id }
+  global.cancelAnimationFrame = key => frames.delete(key)
+  const manager = new MeasureManager({ doubleRaf: true })
+  const root = { querySelectorAll: () => [] }
+  try {
+    manager.schedule({ key: 'layout', root, onReady: () => calls.push('stale') })
+    manager.schedule({ key: 'layout', root, onReady: () => calls.push('latest') })
+    assert.equal(frames.size, 1)
+    while (frames.size) {
+      const [key, fn] = frames.entries().next().value
+      frames.delete(key); fn()
+    }
+    assert.deepEqual(calls, ['latest'])
+  } finally {
+    manager.destroy()
+    delete global.requestAnimationFrame; delete global.cancelAnimationFrame
+  }
+})
+
+test('image errors release waiting measurements and detach event listeners', () => {
+  const frames = new Map(); let id = 0; let measured = 0
+  global.requestAnimationFrame = fn => { frames.set(++id, fn); return id }
+  global.cancelAnimationFrame = key => frames.delete(key)
+  const listeners = new Map()
+  const img = { complete: false, addEventListener: (key, fn) => listeners.set(key, fn), removeEventListener: key => listeners.delete(key) }
+  const manager = new MeasureManager()
+  try {
+    manager.schedule({ key: 'layout', root: { querySelectorAll: () => [img] }, onReady: () => measured++ })
+    assert.equal(frames.size, 0)
+    assert.equal(listeners.size, 2)
+    img.complete = true
+    listeners.get('error')()
+    assert.equal(listeners.size, 0)
+    frames.get(id)(); frames.delete(id)
+    assert.equal(measured, 1)
+  } finally {
+    manager.destroy()
+    delete global.requestAnimationFrame; delete global.cancelAnimationFrame
+  }
+})

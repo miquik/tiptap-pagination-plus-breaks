@@ -11,11 +11,10 @@ type MeasureManagerOptions = {
 
 export class MeasureManager {
 	private destroyed = false
-	private pendingKey: string | null = null
+	private pendingRequest: MeasureRequest | null = null
 	private raf1: number | null = null
 	private raf2: number | null = null
 
-	private watchedImages = new WeakSet<HTMLImageElement>()
 	private imageCleanup = new Map<string, () => void>()
 
 	private options: Required<MeasureManagerOptions>
@@ -29,6 +28,7 @@ export class MeasureManager {
 
 	destroy() {
 		this.destroyed = true
+		this.pendingRequest = null
 		this.cancelScheduledFrame()
 
 		for (const cleanup of this.imageCleanup.values()) {
@@ -40,12 +40,8 @@ export class MeasureManager {
 	schedule(req: MeasureRequest) {
 		if (this.destroyed) return
 
-		// se sto già aspettando esattamente questo step, non rifaccio nulla
-		if (this.pendingKey === req.key) {
-			return
-		}
-
-		this.pendingKey = req.key
+		this.pendingRequest = req
+		this.cancelScheduledFrame()
 
 		// pulisco eventuali listener del task precedente
 		this.clearImageWaiters()
@@ -55,7 +51,7 @@ export class MeasureManager {
 
 	private trySchedule(req: MeasureRequest) {
 		if (this.destroyed) return
-		if (this.pendingKey !== req.key) return
+		if (this.pendingRequest !== req) return
 
 		const pendingImages = this.findPendingImages(req.root)
 
@@ -79,12 +75,12 @@ export class MeasureManager {
 				fonts.ready
 					.then(() => {
 						if (this.destroyed) return
-						if (this.pendingKey !== req.key) return
+						if (this.pendingRequest !== req) return
 						this.scheduleInFrame(req)
 					})
 					.catch(() => {
 						if (this.destroyed) return
-						if (this.pendingKey !== req.key) return
+						if (this.pendingRequest !== req) return
 						this.scheduleInFrame(req)
 					})
 				return
@@ -101,19 +97,19 @@ export class MeasureManager {
 			this.raf1 = null
 
 			if (this.destroyed) return
-			if (this.pendingKey !== req.key) return
+			if (this.pendingRequest !== req) return
 
 			if (this.options.doubleRaf) {
 				this.raf2 = requestAnimationFrame(() => {
 					this.raf2 = null
 					if (this.destroyed) return
-					if (this.pendingKey !== req.key) return
+					if (this.pendingRequest !== req) return
 
-					this.pendingKey = null
+					this.pendingRequest = null
 					req.onReady()
 				})
 			} else {
-				this.pendingKey = null
+				this.pendingRequest = null
 				req.onReady()
 			}
 		})
@@ -125,7 +121,7 @@ export class MeasureManager {
 	}
 
 	private isImageReady(img: HTMLImageElement): boolean {
-		// complete=true anche in caso di errore; naturalWidth>0 evita falsi positivi
+		// Anche un errore termina il caricamento e deve sbloccare le misure.
 		return img.complete
 	}
 
@@ -143,7 +139,7 @@ export class MeasureManager {
 			this.imageCleanup.delete(req.key)
 
 			if (this.destroyed) return
-			if (this.pendingKey !== req.key) return
+			if (this.pendingRequest !== req) return
 
 			this.trySchedule(req)
 		}
@@ -171,7 +167,6 @@ export class MeasureManager {
 				img.removeEventListener('error', onError)
 			})
 
-			this.watchedImages.add(img)
 		}
 
 		if (remaining === 0) {

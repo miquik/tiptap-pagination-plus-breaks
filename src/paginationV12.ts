@@ -216,7 +216,7 @@ export const PaginationV12 = Extension.create<
 			this.options.marginTop -
 			this.options.marginBottom
 		this.editor.storage.PaginationV12.pageContentHeight = _pageContentHeight
-		this.editor.storage.PaginationV12.pageContentWidth = this.options.pageWidth
+		this.editor.storage.PaginationV12.pageContentWidth = this.options.pageWidth - this.options.marginLeft - this.options.marginRight
 	},
 	addCommands() {
 		return {
@@ -402,14 +402,17 @@ class MyPluginView {
 				onReady: () => {
 					if (this.destroyed) return
 
+					const current = myPluginKey.getState(this.view.state)
+					if (!current) return
 					layoutPages(
-						view,
-						curr?.vdivs ?? [],
+						this.view,
+						current.vdivs,
 						this.prefixSumIndex,
 						this.pageOptions,
-						curr?.lastPageCount ?? 0
+						current.lastPageCount
 					)
-					this.render(curr.vdivIndex, curr.vdivs)
+					const updated = myPluginKey.getState(this.view.state)
+					if (updated) this.render(updated.vdivIndex, updated.vdivs)
 					refreshPage(this.view.dom)
 				},
 			})
@@ -955,14 +958,12 @@ const layoutPages = (
 		// stimiamo per eccesso
 		estimageVDivPageCount = mustRecalc !== false ? pbs.length - mustRecalc : 0
 	}
-	/*
 	if (pbs.length === 0 && vdivs.length > 0) {
 		// abbiamo cancellato l'ultimo pageBreak, dobbiamo gestirlo a parte
 		// altrimenti non viene "pulito"
 		mustRecalc = 0
 		vdivs.length = 0
 	}
-	*/
 
 	const paginationElement = editorDom.querySelector('[data-rm-pagination]')
 	if (paginationElement) {
