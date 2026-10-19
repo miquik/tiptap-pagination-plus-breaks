@@ -1,8 +1,11 @@
-import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { Decoration, DecorationSet } from "@tiptap/pm/view";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PaginationPlus = void 0;
+const core_1 = require("@tiptap/core");
+const state_1 = require("@tiptap/pm/state");
+const view_1 = require("@tiptap/pm/view");
 const page_count_meta_key = "PAGE_COUNT_META_KEY";
-export const PaginationPlus = Extension.create({
+exports.PaginationPlus = core_1.Extension.create({
     name: "PaginationPlus",
     addOptions() {
         return {
@@ -157,19 +160,19 @@ export const PaginationPlus = Extension.create({
         const pageOptions = this.options;
         const editor = this.editor;
         return [
-            new Plugin({
-                key: new PluginKey("pagination"),
+            new state_1.Plugin({
+                key: new state_1.PluginKey("pagination"),
                 state: {
                     init(_, state) {
                         const widgetList = createDecoration(state, pageOptions);
-                        return DecorationSet.create(state.doc, widgetList);
+                        return view_1.DecorationSet.create(state.doc, widgetList);
                     },
                     apply(tr, oldDeco, oldState, newState) {
                         const pageCount = calculatePageCount(editor.view, pageOptions);
                         const currentPageCount = getExistingPageCount(editor.view);
                         if ((pageCount > 1 ? pageCount : 1) !== currentPageCount) {
                             const widgetList = createDecoration(newState, pageOptions);
-                            return DecorationSet.create(newState.doc, [...widgetList]);
+                            return view_1.DecorationSet.create(newState.doc, [...widgetList]);
                         }
                         return oldDeco;
                     },
@@ -234,7 +237,7 @@ const calculatePageCount = (view, pageOptions) => {
     }
 };
 function createDecoration(state, pageOptions, isInitial = false) {
-    const pageWidget = Decoration.widget(0, (view) => {
+    const pageWidget = view_1.Decoration.widget(0, (view) => {
         const _pageGap = pageOptions.pageGap;
         const _pageHeaderHeight = (pageOptions.pageHeaderHeight + pageOptions.contentMarginTop + pageOptions.marginTop);
         const _pageFooterHeight = (pageOptions.pageFooterHeight + pageOptions.contentMarginBottom + pageOptions.marginBottom);
@@ -322,7 +325,7 @@ function createDecoration(state, pageOptions, isInitial = false) {
         el.id = "pages";
         return el;
     }, { side: -1 });
-    const firstHeaderWidget = Decoration.widget(0, () => {
+    const firstHeaderWidget = view_1.Decoration.widget(0, () => {
         const el = document.createElement("div");
         el.style.position = "relative";
         el.classList.add("rm-first-page-header");

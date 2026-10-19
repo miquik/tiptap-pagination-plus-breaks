@@ -1,104 +1,63 @@
-# TipTap Pagination Plus
-[![NPM](https://img.shields.io/npm/v/tiptap-pagination-plus.svg)](https://www.npmjs.com/package/tiptap-pagination-plus)
+# tiptap-pagination-plus-breaks
 
-`tiptap-pagination-plus` extension that adds pagination support to your editor with table handling capabilities.
+Estensione di paginazione per Tiptap 3, basata su `vel/src/plugins/paginationV12.ts`.
 
-
-# Demo
-https://romikmakavana.me/tiptap-pagination/
-
-## Documentation
-https://romikmakavana.me/tiptap
-
-## Installation
-
-```bash
-npm install tiptap-pagination-plus
-```  
-
-## Usage
-
-### Basic Setup
-
-```typescript
+```ts
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
-import { 
-  PaginationPlus,
-  TablePlus,
-  TableRowPlus,
-  TableCellPlus,
-  TableHeaderPlus
-} from 'tiptap-pagination-plus'
+import { PaginationV12 } from 'tiptap-pagination-plus-breaks'
 
 const editor = new Editor({
-  extensions: [
-    StarterKit,
-    TablePlus,
-    TableRowPlus,
-    TableCellPlus,
-    TableHeaderPlus,
-    PaginationPlus.configure({
-      pageHeight: 800,        // Height of each page in pixels
-      pageGap: 50,            // Gap between pages in pixels
-      pageGapBorderSize: 1,   // Border size for page gaps
-      pageBreakBackground: "#ffffff",  // Background color for page gaps
-      pageHeaderHeight: 50,   // Height of page header in pixels
-      pageFooterHeight: 50,   // Height of page footer in pixels
-      footerRight: "{page}",  // Custom text to display in the footer right side
-      footerLeft: "",         // Custom text to display in the footer left side
-      headerRight: "",        // Custom text to display in the header right side
-      headerLeft: "",         // Custom text to display in the header left side
-      marginTop: 0,           // Top margin for pages
-      marginBottom: 0,        // Bottom margin for pages
-      marginLeft: 50,         // Left margin for pages
-      marginRight: 50,        // Right margin for pages
-      contentMarginTop: 0,    // Top margin for content within pages
-      contentMarginBottom: 0, // Bottom margin for content within pages
-    }),
-  ],
+  element: document.querySelector('#editor'),
+  extensions: [StarterKit, PaginationV12.configure({
+    pageWidth: 600,
+    pageHeight: 800,
+    pageGap: 50,
+    header: '',
+    footer: 'Pagina {page} di {total}',
+    initializeOnPaste: true,
+  })],
+  content: '<p>Primo paragrafo</p>',
 })
+
+editor.commands.resetPagination()
 ```
 
-### Table Pagination
+Richiede `@tiptap/core` e `@tiptap/pm` versione 3.4.2 o successiva nella serie 3.
+Il pacchetto espone anche `PaginationV12Options`, `PaginationV12Storage`,
+`PaginationV12Divider` e `paginationV12PluginKey`. Gli export precedenti
+`PaginationPlus`, `PaginationPlusV1` e `PaginationPlusV2` sono conservati;
+utilizzare una sola estensione di paginazione per editor.
 
-Key points for table pagination:
-- Tables will automatically split across pages when they exceed the page height
-- To split table across pages, you have to use these extensions
-- List : TablePlus, TableRowPlus, TableCellPlus, TableHeaderPlus
+`header` e `footer` accettano HTML con segnaposto `{page}` (da 1) e `{total}`,
+oppure una funzione `(pageIndex, numPages, editorDOM, intersectionIndex?) => HTMLElement`.
+L'indice passato alle funzioni parte da zero. Usare solo HTML fidato.
+Le dimensioni e i margini sono in pixel; l'area di contenuto deve restare positiva.
+Per tutte le opzioni vedere `src/paginationV12Types.ts` e i default in `src/paginationV12.ts`.
 
-### Configuration Options
+## Sviluppo
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pageHeight` | number | 800 | Height of each page in pixels |
-| `pageGap` | number | 50 | Gap between pages in pixels |
-| `pageGapBorderSize` | number | 1 | Border size for page gaps |
-| `pageBreakBackground` | string | "#ffffff" | Background color for page gaps |
-| `pageHeaderHeight` | number | 50 | Height of page header in pixels |
-| `pageFooterHeight` | number | 50 | Height of page footer in pixels |
-| `footerRight` | string | "{page}" | Custom text to display in the footer right side |
-| `footerLeft` | string | "" | Custom text to display in the footer left side |
-| `headerRight` | string | "" | Custom text to display in the header right side |
-| `headerLeft` | string | "" | Custom text to display in the header left side |
-| `marginTop` | number | 0 | Top margin for pages |
-| `marginBottom` | number | 0 | Bottom margin for pages |
-| `marginLeft` | number | 50 | Left margin for pages |
-| `marginRight` | number | 50 | Right margin for pages |
-| `contentMarginTop` | number | 0 | Top margin for content within pages |
-| `contentMarginBottom` | number | 0 | Bottom margin for content within pages |
+```sh
+npm install
+npm test
+npm run build
+npm pack --dry-run
+```
 
-### Features
+La build genera JavaScript CommonJS e dichiarazioni TypeScript in `dist`.
+`prepack` ricompila prima della creazione del pacchetto.
 
-- Automatic page breaks based on content height
-- Page numbers in the footer
-- Custom header/footer text support
-- use `{page}` variable to display current page number in header/footer text
-- Table pagination with header preservation
-- Responsive design
-- Automatic page height calculation
-- Support for nested content
+## Limiti e miglioramenti
 
-## License
+La paginazione usa misure DOM e decorazioni: richiede un browser con layout reale.
+I divisori `[data-vdiv]` dipendono dai nodi forniti dall'applicazione; il pacchetto
+non registra uno schema per questi nodi. Le decorazioni non sono salvate nel documento.
+Il comportamento V12 dei divisori pu? rendere male i bordi dei paragrafi che
+attraversano una pagina. Una separazione fisica dei contenuti richiede un intervento
+sull'algoritmo e sullo schema, da verificare con selezione, undo e copia/incolla.
 
-MIT
+I test automatici coprono API del pacchetto, intersezioni, input degeneri,
+immagini fallite e annullamento delle misure. La verifica visiva in browser di
+immagini, tabelle, paragrafi lunghi, zoom, ridimensionamento e stampa resta necessaria.
+La V12 non osserva ancora in modo generale ogni cambiamento di dimensioni successivo
+alla prima misura: `ResizeObserver` e test browser sono i prossimi miglioramenti.
